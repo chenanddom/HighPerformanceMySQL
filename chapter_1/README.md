@@ -185,6 +185,93 @@ MVCC只支持REPEATABLE READ和READ COMMITED两个隔离级别的工作。其他
 而不符合当前事务版本的数据。而SERIALIZABLE则会多所以的读取的行都加锁.
 
 
+## MySQL的存储引擎
+
+在文件系统中，MySQL将每个数据库(也可以成为schema)保存为数据目录下的一个子目录。创建表时，MySQL会在数据库子目录下创建一个和表名同名的
+.frm文件保存表的定义。数据库的定义和表的定义一般都是存储在文件系统的目录和文件里面，统一由MySQL服务器层处理.
+
+我们可以使用SHOW TABLE STATUS '表名'\G查看相关的信息,查询回来的信息如下:
+
+![拓扑图](images/MySQL_ENGINE_1.PNG)
+
+详解：
+
+Name:表名
+
+Engine:表的存储引擎的类型。在就版本中，该列表的名字叫Type，而不是Engine.
+
+Row_format:行的格式，对于MyISAM表，可选择的值为Dynamic,Fixed或者Compressed.Dynamic的行长度是可变的，一般包含可变长度的字段，例如VARCHAR
+或者BLOB。Fixed的行长度增势固定的，只有包含固定长度的列表，如CHAR和INTEGER.Compressed的行则只在要锁表中存在。
+
+Rows:表中的行数，对于MyISAM和其他的一些存储引擎，该值是精确的，但是对于InnoDB,该值是估计值。
+
+
+Avg_row_length:平均的每行包含的字节数.
+
+Data_length:表数据的大小
+
+Max_data_length:表数据的最大容量，该值和存储引擎相关。
+
+Index_length:所以的大小.
+
+Data_free:对于MyISAM表，标识以及分配单目前还没有使用的空间。这部分空间包括了之前删除的行，以及后续可以被INSERT的利益的空间.
+
+
+Auto_increment:下一个AUTO_INCREMENT的值。
+
+
+Create_time:表创建的时间。
+
+Update_time:表更最后的修改时间。
+
+Check_time:使用CHECK TABLE命令或者myisamchk工具最后一次检查表的时间。
+
+Collation:表的默认字符集和字符列拍寻规则。
+
+Checksum:如果启用，保存的是整个表的试试校验和。
+
+Create_options:创建表时指定的其他选项。
+
+Comment:该列包含了一些额外的信息。对于MyISAM表，保存的时表在创建时带的注释。对于InnoDB,则保存的时InnoDB表空间剩余的空间信息，
+如果时一个试图，则该列包含了"VIEW"的样本字样.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
