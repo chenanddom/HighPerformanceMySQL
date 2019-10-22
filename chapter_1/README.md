@@ -279,6 +279,17 @@ MyISAM在MySQL5.1之前时MySQL默认的存储引擎。而且MyISAM提供了全�
          MySQL5.0中，MyISAM表如果时可变长行，默认配置只能处理256TB数据，因为只想数据记录的指针长度时6字节。而在更早的版本中，
     指针长度默认是4字节，所以最大只能处理4GB的数据。MySQL的版本是支持8字节的指针的。要改变MyISAM表指针长度(调高或者调低)，可以通过修改表的MAX_ROWS
     和AVG_ROW_LENGTH选项值老实现。两者的相乘就是表科大到的最大大小。修改这两个参数会导致重新构建整个表和表的索引，这个可能需要话很长的时间.
+    具体可以使用下面的sql语句修改:alter table  table_name  MAX_ROWS=1000000000 AVG_ROW_LENGTH=15000;
+    
+执行之后查看表可以看到如下结果:
+
+![拓扑图](images/MySQL_ENGINE_2.PNG)
+    
+    
+    
+    
+    
+    
     
     
     
