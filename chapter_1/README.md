@@ -328,6 +328,64 @@ MyISAM引擎涉及简单，数据以紧密的格式存储，索引在某些常�
 
 
 
+### 转换表的引擎
+
+将表从一个引擎修改为另外一个我们只需要使用ALTER TABLE语句。下面的语句将mytable的引擎修改InnoDB
+
+        ALTER TABLE mytable ENGINE=InnoDB
+
+上面这个方式修改存储引擎，将会时区和原引擎想关的特性，例如会丢失外键。
+
+
+
+#### 导出和导入
+
+可以使用mysqldump工具将数据导出到文件，然后修改建表的语句的存储引擎的选项。
+
+
+#### 创建和查询
+
+综合第一种方法的搞笑和第二章方式的安全部，我们可以想创建一个新的存储引擎的表，然后利用INSERT...SELECT语法来导入到新的表
+如果数据量不是很大的话可以使用下面的方式：
+
+1. CREATE TABLE innodb_table LIKE myisam_table;
+2. ALTER TABLE innodb_table ENGINE=InnoDB;
+3. INSERT INTO innodb_table SELECT *FROM myisam_table;
+
+如果数据量很大话可以批量的处理:
+
+1. START TRANSACTION;
+2. INSERT INTO innodb_table SELECT *FROM myisam_table WHERE id BETWEEN x AND y;
+3. COMMIT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
