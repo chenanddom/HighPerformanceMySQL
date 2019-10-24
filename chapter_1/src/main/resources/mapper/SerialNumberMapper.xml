@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.einwin.framework.idcenter.mapper.SerialNumberMapper">
+    <resultMap id="BaseResultMap" type="com.einwin.framework.idcenter.model.SerialNumber">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="code" jdbcType="VARCHAR" property="code" />
+        <result column="type" jdbcType="INTEGER" property="type" />
+        <result column="template" jdbcType="VARCHAR" property="template" />
+        <result column="length" jdbcType="INTEGER" property="length" />
+        <result column="step" jdbcType="INTEGER" property="step" />
+        <result column="pad" jdbcType="VARCHAR" property="pad" />
+        <result column="current_sequence" jdbcType="VARCHAR" property="currentSequence" />
+        <result column="cycle_format" jdbcType="VARCHAR" property="cycleFormat" />
+        <result column="current_cycle" jdbcType="VARCHAR" property="currentCycle" />
+        <result column="cache" jdbcType="INTEGER" property="cache" />
+        <result column="converter" jdbcType="VARCHAR" property="converter" />
+        <result column="remark" jdbcType="VARCHAR" property="remark" />
+        <result column="created_by" jdbcType="VARCHAR" property="createdBy" />
+        <result column="creation_date" jdbcType="TIMESTAMP" property="creationDate" />
+        <result column="updated_by" jdbcType="VARCHAR" property="updatedBy" />
+        <result column="updation_date" jdbcType="TIMESTAMP" property="updationDate" />
+        <result column="enabled_flag" jdbcType="INTEGER" property="enabledFlag" />
+    </resultMap>
+    <sql id="BaseTable">
+        idc_serial_number
+    </sql>
+
+    <sql id="GenerationType">
+        UUID()
+    </sql>
+
+    <select id="exists" parameterType="String" resultType="boolean">
+        SELECT CASE WHEN count(1) > 0 THEN 1 ELSE 0 END FROM <include refid="BaseTable" />
+        WHERE code = #{code} and  enabled_flag = 1
+    </select>
+
+    <select id="getByCode" resultMap="BaseResultMap" >
+        select <include refid="BaseColumns" />
+        from <include refid="BaseTable" />
+        where code = #{code} and  enabled_flag = 1
+    </select>
+
+    <update id="resetCurrentSequence" >
+        update <include refid="BaseTable" />
+        <trim prefix="SET"  suffixOverrides="," >
+            current_sequence = #{currentSequence},
+            <if test="currentCycle != null" >
+                current_cycle = #{currentCycle,jdbcType=VARCHAR},
+            </if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="updateCurrentSequence" >
+        update <include refid="BaseTable" />
+        <trim prefix="SET"  suffixOverrides="," >
+            current_sequence = current_sequence + #{increase},
+            <if test="currentCycle != null" >
+                current_cycle = #{currentCycle,jdbcType=VARCHAR},
+            </if>
+        </trim>
+        where id = #{id}
+    </update>
+</mapper>
