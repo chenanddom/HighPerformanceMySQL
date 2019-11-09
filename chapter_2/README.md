@@ -80,6 +80,52 @@
 
 
 
+## 获取系统的性能和状态
+
+在进行基准测试的时候，要尽可能的手机被测试系统的信息。每次测试的需要数据和必要的配置，指标等都应该按规律存放好
+其中我们需要记录的数据包括了系统的状态和性能指标，诸如CPU使用率和磁盘I/O,网络流量统计，SHOW GLOBAL STATUS计数器等
+我们可以使用下面的脚本进行测试
+
+    #!/bin/sh
+    NTERVAL=5
+    PREFIX=$INTERVAL-sec-status
+    RUNFILE=/usr/sh/running
+    /usr/mysql/mysql5.7/bin/mysql -uroot -P*** -p*** -e 'show global variables'>>mysql-variables
+    while  test -e $RUNFILE; do
+            file=$(date +%F_%H)
+            sleep=$(date +%s.%N |awk "{print $INTERVAL -($1 % $NTERVAL)}")
+            sleep $sleep
+            ts="$(date +"TS %s.%N %F %T")"
+            loadavg="$(uptime)"
+            echo "$ts $loadavg">> $PREFIX-${file}-status
+            /usr/mysql/mysql5.7/bin/mysql  -uroot -P*** -p*** -e "show global status" >> $PREFIX-${file}-status &
+            echo "$ts $loadavg">> $PREFIX-${file}-innodbstatus
+            /usr/mysql/mysql5.7/bin/mysql   -uroot -P*** -p*** -e "show engine innodb status\G" >> $PREFIX-${file}-innodbstatus &
+            echo "$ts $loadavg">> $PREFIX-${file}-processlist
+            /usr/mysql/mysql5.7/bin/mysql  -uroot -P*** -p*** -e "show full processlist\G" >>$PREFIX-${file}-processlist &
+            echo $ts
+    done
+    echo Exiting because $RUNFILE not exist
+    
+## 获取准确的测试结果
+
+1. 审查项目
+     
+     * 选择正确的基准测试类型
+     * 收集相关的线上数据
+     * 采用正确的测试标准
+
+
+
+2. 确认测试结果是否有可重复性
+
+    确保每次重新测试的时候都要把系统重置到一致的状态,通过修改较少的参数，得到结果如果不确定就不对外公布。
+    
+    
+    
+ 
+
+
 
 
 
