@@ -314,6 +314,13 @@ update和mixed(默认)
 ![mysqlslap](images/mysqlslap_3.png)
 
 
+### MySQL基准测试套件
+
+* sysbench
+
+ sysbench可以执行多种类型的测试，包括了数据库性能的测试和运行数据库的服务的性能。
+
+
 
 
 
