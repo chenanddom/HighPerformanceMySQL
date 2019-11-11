@@ -265,10 +265,55 @@ http_load在这些URL中随机选择进行测试。也可以定制http_load，�
 
 
 
-### 但组件式测试工具
+### 单组件式测试工具
 
 
-mysqlslap:可以模拟扶我去的负载，并且输出计时信息
+mysqlslap:可以模拟服务器的负载，并且输出计时信息。测试时可以执行并发链接数，并制定SQL语句(可以在命令行上执行，
+也可以在SQL语句写入到参数文件中)。如果没有制定SQL语句，mysqlslap会自动生成查询schema的select语句
+
+mysqlslap的参数说明:
+
+
+--auto-generate-sql,-a自动生成测试表和数据，表示mysqlslap工具自己生成的SQL脚本来测试并发压力
+
+--auto-generate-sql-load-type=type 测试语句的类型。代表要测试的环境是读操作还是写操作还是两个混合。取值为read,key，write,
+update和mixed(默认)
+
+--auto-generate-sql-add-auto-increment代表生成的表自动添加auto_increment列
+
+--number-char-cols=N,-x N 自动生成的测试表包含多少个字符测试类型的列，默认1
+--number-int-cols=N,-y N自动生成的测试表包含多少给数字类型的列，默认为1
+--number-of-queries=N 总的测试查询次数(并发客户数每个客户查询的)
+--query=name,-q 使用自定义的脚本的执行测试，例如可以调用自定义的存储过程或者SQL语句来执行测试。
+--create-schema 代表自定义的测试库名称，测试的schema，MySQL中的schema，也就是database。
+--commint=N commit每X个语句记录一次。
+--compress,-C 如果服务器和客户端支持都压缩，则压缩信息传递。
+--concurrency=N,-c N标识并发量，也就是模拟多少个客户端同时执行select.可以指多个值。以逗号或者--delimiter参数指定的值做为分隔符。例如：--concurrency=100,200,500。
+--iterations=N，-i N 测试执行的迭代次数，代表不同并发环境下，格字的运行测试多少次。
+
+--engine=name, -e用于创建表的名称存储引擎。
+
+
+例子：
+
+测试不同的存储引擎的性能对比：
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
