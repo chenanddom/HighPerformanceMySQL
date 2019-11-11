@@ -298,14 +298,20 @@ update和mixed(默认)
 
 测试不同的存储引擎的性能对比：
 
+* 测试不同的存储引擎的性能对比
+
+![mysqlslap](images/mysqlslap.png)
+
+
+* 执行一次测试，分别为50和100，执行1000的总查询
+
+
+![mysqlslap](images/mysqlslap_2.png)
 
 
 
-
-
-
-
-
+* 50和100个并发分别得到一次测试结果(Benchmark)，并发数越多，执行完所有查询的时间越长
+![mysqlslap](images/mysqlslap_3.png)
 
 
 
