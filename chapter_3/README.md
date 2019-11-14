@@ -14,6 +14,15 @@
 ![percona-toolkit](images/percona-toolkit_3.png)
 
 
+使用percona-toolkit分析慢查询日志:
+
+首先mysql需要开启慢查询日志,可以使用下面的语句:
+    
+        SET GLOBAL slow_query_log = ON; 
+
+开启了慢查询日志之后就会得到如下的一个慢查询的日志:
+![percona-toolkit](images/percona-toolkit_4.png)
+
  
  
  
