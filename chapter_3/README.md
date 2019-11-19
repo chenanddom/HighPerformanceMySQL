@@ -194,6 +194,88 @@ SHOW STATUS并不是一款剖析的工具。可以显示某些活动如度索引
     8、distinct： 优化distinct操作，在找到第一匹配的元祖后即停止找同样值的操作
 
 
+4.使用慢查询日志
+
+
+使用percona-toolkit 的pt-query-digest进行分析
+
+
+
+5. 使用Performance Schema
+
+
+        SELECT event_name,count_star,sum_timer_wait
+        FROM `events_waits_summary_global_by_event_name`
+        ORDER BY sum_timer_wait DESC LIMIT 5
+
+
+
+
+
+
+
+### 诊断间歇性问题
+
+
+间歇性问题的比如形态的偶尔停顿或者慢查询，很难重现,我们尽量不要使用试错的方式来解决问题。
+
+
+
+
+#### 确定单条查询问题还是服务器的问题
+
+
+如果单条查询突然变慢有突然的变好，那么就不是查询的问题而是，但是如果只是执行某条查询的时候会变慢就应该针对该查询进行优化.
+
+
+
+* 使用SHOW GLOBAL STATUS
+
+执行的脚本如下：
+
+    ./mysqladmin -u**** -p***** -h*.*.*.* -P**** -r -i 1 ext |awk -F"|" '{\
+      if($2 ~ /Variable_name/){\
+        print " <-------------    "  strftime("%H:%M:%S") "    ------------->";\
+      }\
+      if($2 ~ /Questions|Queries|Innodb_rows|Com_select |Com_insert |Com_update |Com_delete |Innodb_buffer_pool_read_requests/)\
+        print $2 $3;\
+    }';
+
+
+执行的结果如下:
+
+![show status](images/show-status.png)
+
+
+该脚本输出给awk计算输出每秒的查询个数，Threads_connected和Threads_running(表示当前正在执行查询的线程数)。
+这三个数据的趋势对于服务器级别的偶尔停顿的敏感性很高。一般发生这类问题的时候，根据原因的不同和应用的连接数据
+库的方式的不同，每秒的查询数一般会下降，而其他的两个至少有一个会上升。这个测试的结果需要长时间的测试才可以得到。
+
+
+#### 使用SHOW PROCESSLIST
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
