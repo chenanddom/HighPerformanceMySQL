@@ -9,6 +9,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * @Description:一句话的功能说明
@@ -19,6 +21,8 @@ import javax.xml.xpath.XPathFactory;
 public class Demo {
 
     public static void main(String[] args) {
-
+        Date date = new Date(1575623613703L);
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.out.println(simpleDateFormat.format(date));
     }
 }
