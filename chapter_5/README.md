@@ -153,13 +153,151 @@ MySQL中有很多种类型，可以为不同的 常见场景提供更好的性�
 
 要实现较高的性能又需要又足够的长度，同时又不能太长
 
+例子:
 
 
-
-
-
-
+    生成数据集: 利用示例数据库sakila,从表city中生成一个demo表
+    CREATE TABLE sakila.city_demo(city VARCHAR(50) NOT NULL);
+    INSERT INTO sakila.city_demo(city) SELECT city from sakila.city;
+    INSERT INTO sakila.city_demo(city)  SELECT city FROM sakila.city_demo; # 执行5次
+    UPDATE sakila.city_demo SET city = (SELECT city from sakila.city ORDER BY RAND() LIMIT 1);
     
+    
+    
+    SELECT COUNT(DISTINCT LEFT(city,3))/COUNT(*) AS sel3,
+    COUNT(DISTINCT LEFT(city,4))/COUNT(*) AS sel4,
+    COUNT(DISTINCT LEFT(city,5))/COUNT(*) AS sel5,
+    COUNT(DISTINCT LEFT(city,6))/COUNT(*) AS sel6,
+    COUNT(DISTINCT LEFT(city,7))/COUNT(*) AS sel7,
+    COUNT(DISTINCT LEFT(city,8))/COUNT(*) AS sel8,
+    COUNT(DISTINCT LEFT(city,9))/COUNT(*) AS sel9
+    FROM `sakila`.`city_demo`;
+
+
+执行上面的SQL的结果:
+
+![大字符串索引的最优的长度](images/index_best_length.png)        
+
+
+### 多列索引
+
+通常我们会被多列索引所误导，然后为每个列创建一个独立的索引，或者按照错误的顺序创建多列索引
+
+例如我的创建的表如下：
+
+    CREATE TABLE `user_detail`(
+    `id` BIGINT(20) NOT NULL,
+    `user_name` VARCHAR(64) DEFAULT NULL COMMENT '用户名',
+    `date_of_birth` DATETIME DEFAULT NULL COMMENT '出生日期',
+    `user_cert` VARCHAR(32)  NOT NULL COMMENT '身份证号',
+    `gender` BIT DEFAULT b'0' COMMENT '性别',
+    PRIMARY KEY (`id`) USING BTREE,
+    KEY `index_user_name`(`user_name`)USING BTREE,
+    KEY `index_user_cert`(`user_cert`)USING BTREE
+    )ENGINE=INNODB DEFAULT CHARSET=utf8 COMMENT '用户表';
+    
+
+通过查看SHOW CREATE TABLE `user_detail`可以得到如下的结果：
+
+
+    CREATE TABLE `user_detail` (
+      `id` bigint(20) NOT NULL,
+      `user_name` varchar(64) DEFAULT NULL COMMENT '用户名',
+      `date_of_birth` datetime DEFAULT NULL COMMENT '出生日期',
+      `user_cert` varchar(32) NOT NULL COMMENT '身份证号',
+      `gender` bit(1) DEFAULT b'0' COMMENT '性别',
+      PRIMARY KEY (`id`) USING BTREE,
+      KEY `index_user_name` (`user_name`) USING BTREE,
+      KEY `index_user_cert` (`user_cert`) USING BTREE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户表'
+
+
+    这是一种错误的策略，一般由于我们被"把WHERE 条件里面的列都建索引"的错误观点导致的，这样创建的索引是"一星"索引
+    ，它的性能都是和最有索引差好几个级别的。如果无法创建一个三星的索引，我们大可忽略WHERE子句，而去寻找优化索引的方法，
+    优化索引的顺序或者创建一个覆盖索引.
+
+
+
+    如果我们使用了多列单独的索引的方式查询，在MySQL5.0之前的版本查询的时候就会使用全表扫描。例如以下的表
+    CREATE TABLE `film_actor` (
+      `actor_id` smallint(5) unsigned NOT NULL,
+      `film_id` smallint(5) unsigned NOT NULL,
+      `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`actor_id`,`film_id`),
+      KEY `idx_fk_film_id` (`film_id`),
+      CONSTRAINT `fk_film_actor_actor` FOREIGN KEY (`actor_id`) REFERENCES `actor` (`actor_id`) ON UPDATE CASCADE,
+      CONSTRAINT `fk_film_actor_film` FOREIGN KEY (`film_id`) REFERENCES `film` (`film_id`) ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 进行sql查询就是会出现全表扫描，例如：
+    SELECT film_id,actor_id FROM sakila.`film_actor` WHERE actor_id=1 OR film_id=1;
+
+    MySQL5.0之前的版本改成如下的方式就可以避免全表扫描：
+     SELECT film_id,actor_id FROM sakila.`film_actor` WHERE actor_id=1
+    UNION ALL
+    SELECT film_id,actor_id FROM sakila.`film_actor` WHERE film_id=1 AND actor_id <> 1;
+
+    在MySQL5.0中和更新的版本中，查询能够同时使用这两个单列索引进行扫描，并将结果进行合并，这种算法有三个变种:OR条件的联合(Union),
+    AND条件的相交组合前面两种情况的联合及相交，可以使用EXPLAIN中Extra列可以查看到这点：
+    EXPLAIN SELECT film_id,actor_id FROM sakila.`film_actor` WHERE actor_id=1 OR film_id=1;
+![](images/multi_column_index.png)
+
+在上面的图片我们可以看到执行的sql在优化后具有了嵌套的操作，索引合并是一种优化的结果，但是实际上表明表上的索引创建的很糟糕：
+
+* 当出现服务器对多个索引做出相交操作的时候，通常意味这需要一个包含所有相关的多列索引，而不是多个独立的单列索引。
+
+* 当服务器需要对多个索引做联合操作时，通常需要耗费大量的CPU和内存资源在蒜贩的缓存，排序和合并操作上，特别的时当妻子的有些索引的
+选择性能不高，需要合并的扫描返回大量的数据的时候    
+
+* 重要的时，优化器不会吧这些计算到"查询成本"中，优化器值关心随机页面读取，这回是的查询的成本被低估了。导致了执行改计划还不如直接
+全表查询。
+
+
+如果在EXPLAIN中查看到索引合并，应该好好检查下表的结构，看是不是已经最优的。也可以通过参数optimizer_switch来关闭所有合并功能。
+也可以时使用IGNORE INDEX提示优化器忽略调某些索引。
+
+
+
+
+
+
+  
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
