@@ -467,6 +467,24 @@ where x.sex='M' order by rating limit 10000,10
 
 
 
+## 维护索引和表
+
+
+
+### 找到并且修复坏得表
+
+表损坏是以减很糟糕得时区，MyISAM得表损坏通常是由于系统奔溃，其他引擎得可能由于硬件问题，MySQL本身得缺陷或者操作系统的
+问题导致所有的损坏。我们可以使用CHECK TABLE + tableName来检查白是否损坏，使用REPAIR TABLE+tablename来修复表,但是不
+是所有的存储引擎都支持这个命令，此时我们可以使用一个不做任何操作的ALTER操作来重建表，例如:
+ALTER TABLE innodb_tb1 ENGINE=INNODB
+
+
+
+
+
+
+
+
 
 
 
