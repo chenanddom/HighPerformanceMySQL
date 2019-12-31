@@ -28,13 +28,22 @@ public class Demo {
 
         for (int i=1;i<=35;i++) {
             String st1 = " USE `skyway_public_"+i+"`;";
-            String st2 = "INSERT INTO `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) VALUES('3906007429814452251','2019-12-27 16:20:29','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:20:29','7fd372fc1122454aa84602d690eba0ea','0','Recommend','com.skyway.recommend','com.skyway.recommend','1','11');\n" +
-                    "INSERT INTO `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) VALUES('3906007429814452252','2019-12-27 16:21:00','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:21:00','7fd372fc1122454aa84602d690eba0ea','0','Featured APP','com.skyway.featuredapp','com.skyway.featuredapp','1','12');\n" +
-                    "INSERT INTO `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) VALUES('3906007429814452253','2019-12-27 16:21:33','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:21:33','7fd372fc1122454aa84602d690eba0ea','0','Featured Game','com.skyway.featuredgame','com.skyway.featuredgame','1','13');\n" +
-                    "INSERT INTO `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) VALUES('3906007429814452254','2019-12-27 16:21:59','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:21:59','7fd372fc1122454aa84602d690eba0ea','0','NETFLIX','com.skyway.netflix','com.skyway.netflix','2','21');\n" +
-                    "INSERT INTO `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) VALUES('3906007429814452255','2019-12-27 16:22:12','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:22:12','7fd372fc1122454aa84602d690eba0ea','0','Youtube','com.skyway.youtube','com.skyway.youtube','2','22');\n" +
-                    "INSERT INTO `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) VALUES('3906007429814452270','2019-12-27 16:44:25','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:44:25','7fd372fc1122454aa84602d690eba0ea','0','All Apps','com.skyway.allapps','com.skyway.allapps','1','14');\n" +
-                    "INSERT INTO `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) VALUES('3906007429814452271','2019-12-27 16:44:42','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:44:42','7fd372fc1122454aa84602d690eba0ea','0','Recents','com.skyway.recents','com.skyway.recents','1','15');\n";
+            String st2 = "CREATE TABLE `recommend_launcher_item` (\n" +
+                    "  `id` BIGINT(20) NOT NULL,\n" +
+                    "  `create_time` DATETIME DEFAULT NULL,\n" +
+                    "  `created_by` VARCHAR(32) DEFAULT NULL,\n" +
+                    "  `update_time` DATETIME DEFAULT NULL,\n" +
+                    "  `updated_by` VARCHAR(32) DEFAULT NULL,\n" +
+                    "  `deleted_flag` TINYINT(4) DEFAULT NULL,\n" +
+                    "  `title_name` VARCHAR(64) NOT NULL COMMENT '标题名称',\n" +
+                    "  `config_id` BIGINT(20) NOT NULL COMMENT '配置id',\n" +
+                    "  `entry_id` BIGINT(20) NOT NULL COMMENT '条目id',\n" +
+                    "  `entry_name` VARCHAR(64) NOT NULL COMMENT '条目名称',\n" +
+                    "  `app_name` VARCHAR(64) DEFAULT NULL COMMENT 'app名称',\n" +
+                    "  `package_name` VARCHAR(64) NOT NULL COMMENT '包名',\n" +
+                    "  `item_order` INT(11) NOT NULL COMMENT '序号',\n" +
+                    "  PRIMARY KEY (`id`) USING BTREE\n" +
+                    ") ENGINE=INNODB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;";
             System.out.println(st1);
             System.out.println(st2);
             System.out.println();
