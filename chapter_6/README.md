@@ -332,11 +332,125 @@ in完全等同于多个or条件链接，但是in列表的数据先进行拍讯�
 ### MySQL如何执行关联查询
 
 
-在MySQL种每一个查询，没一个片段(包括子查询，甚至基于单表的SELECT)都可能是关联.
+在MySQL种每一个查询，没一个片段(包括子查询，甚至基于单表的SELECT)都可能是关联.例如：UNION查询的，MySQL先将一系列的查询先放到
+一个临时表中，然后再重新读取临时表数据来完成UNION查询。
+
+MySQL关联执行的策略：MySQL对任何关联执行嵌套的循环的关联操作，即MySQL先在一个表中循环取出单挑数据，然后再嵌套循环到以一个表中
+寻找匹配的行，依次下去，直到找到所有表中匹配的行为止。
 
 
 
- 
+#### 执行计划
+
+    和很多其他的数据库不同，MySQL并不会生成查询字节码来执行查询。MySQL生成的查询的以可指令树，然后通过存储引擎执行完成这颗指令树并返回结果。
+
+
+
+#### 关联查询优化器
+
+
+MySQL优化器最重要的一部分就是关联查询优化，它决定了多个表关联的顺序。多个表关联的时候可以有多种不同的关联顺序来获得相同的执行结果。
+查询优化器则通过评估不同顺序时的成本来选择一个代价最小的关联顺序。
+
+
+例子
+
+    EXPLAIN 
+    SELECT 
+    film.`film_id`,
+    film.`title`,
+    film.`release_year`,
+    actor.`actor_id`,
+    actor.`first_name`,
+    actor.`last_name`
+    FROM sakila.`film`
+    INNER JOIN sakila.`film_actor` USING(film_id)
+    INNER JOIN sakila.`actor` USING(actor_id)\G;
+
+![关联查询优化器](images/optimize.png)
+
+以上的例子时优化之后的执行顺序，如果我们时顺序的执行，然后执行的计划会是怎么样的？
+
+
+
+    EXPLAIN 
+    SELECT 
+      STRAIGHT_JOIN film.film_id,
+      film.title,
+      film.release_year,
+      actor.actor_id,
+      actor.first_name,
+      actor.last_name 
+    FROM
+      sakila.film 
+      JOIN sakila.film_actor USING (film_id) 
+      JOIN sakila.actor USING (actor_id);
+
+![顺序执行](images/one_by_one.png)
+
+
+
+
+以上的例子説明了MySQL是如何选择合适的关联顺序来让查询执行的成本尽可能的低。重新的定义关联的顺序是优化器非常重要的一部分功能。有时候
+MySQL优化器是没法正确的给出最优的关联顺序，这个时候使用STRAIGHT JOIN 关键字重写查询，让优化器认为你的是最优的关联执行顺序。但是如果
+关联的表超管了optimizer_search_depth的限制的时候，就会选择"贪婪"搜索的模式。
+
+
+
+#### 排序优化
+
+排序是一个成本很高的操作，从性能的角度考虑的话，应该尽可能的避免对大量的数据进行排序.当MySQL无法利用索引的顺序排序的时候就需要自
+己进行排序，如果数据量小则可以再内存中进行，如果数据量很大则需要使用磁盘，这个过程统一成为文件排序。如果数据量小于"排序缓冲区"，Mysql
+使用内存快速的排序，否则需要将数据分块，将对每个对立的块使用"快速排序"，将各个块存放再磁盘上，然后将排好序的块排序，返回结果.
+SHOW VARIABLES LIKE 'optimizer_search_depth'
+
+
+
+
+
+
+MySQL的两种排序算法
+
+* 两次传输排序(旧版本使用)
+
+
+    需要从数据表读取两次数据,第二次读取数据的时候，因为是读取排序列的进行排序后的索引记录，这个会长生大量的额随机I/O，所以两次数
+    据传输的成本非常的高。
+
+
+* 单次排序(新版本使用)
+
+SHOW VARIABLES LIKE 'max_length_for_sort_data';
+
+
+
+    先读取查询所需要的所以列，然后再根据给定的列进行排序，最后直接返回排序的结果。当查询的数据不超过max_length_for_sort_data就使用
+    "单次传输排序"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
