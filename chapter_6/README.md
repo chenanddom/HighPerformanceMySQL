@@ -431,6 +431,150 @@ SHOW VARIABLES LIKE 'max_length_for_sort_data';
 
 
 
+## MySQL查询优化器的局限性
+
+
+
+### 关联子查询
+
+
+MySQL的子查询实现是非常糟糕的，特别是WHERE条件中包含IN()的子查询语句。
+
+例子：
+~~~
+
+SELECT 
+  * 
+FROM
+  sakila.`film` skf 
+WHERE skf.`film_id` IN 
+  (SELECT 
+    film_id 
+  FROM
+    sakila.`film_actor` 
+  WHERE actor_id = 1)
+
+~~~
+因为MSQL对于IN()列表中的选项有准们的优化策略，一般认为MySQL会执行子查询返回所有包含的actor_id
+为1的film_id.一般来说，IN()列表查询速度很快，所以而我们会认为上面的查询会被成这样执行
+
+~~~
+
+SELECT * FROM sakila.film WHERE film_id IN(1,23,25.....);
+
+)
+
+~~~
+
+但是MySQL 并没有按照我们所想的去执行，而是将查询按照下面的方式执行
+
+~~~
+
+SELECT *FROM sakila.film WHERE EXISTS(
+SELECT *FROM sakila.film_actor WHERE actor_id=1
+AND film_actor.film_id=film.film_id
+);
+
+~~~
+
+
+这时，子查询需要根据film_id来关联外部表film,因为需要film_id字段，所以MySQL认为无法先执行这个子查询，通过EXPLAIN可以看到子查询
+是一个西安不过关子查询：
+
+EXPLAIN	
+SELECT *FROM sakila.film WHERE EXISTS(
+SELECT *FROM sakila.film_actor WHERE actor_id=1
+AND film_actor.film_id=film.film_id
+);
+
+
+![子查询](images/child_search.png)
+
+
+由上颗指，先选择file表进行全表扫描，然后根据film_id逐个执行子查询。如果是一个很小的表，这个糟糕的性能还不会引起注意，但是如果外层的表
+是一个很大的表，那么这个查询的性能是非常糟糕的。
+
+
+我们可以使用下面的方式重写
+
+
+~~~
+
+SELECT film.* FROM sakila.film
+INNER JOIN sakila.film_actor using(film_id)
+WHERE actor_id=1;
+
+~~~
+
+通过使用EXPLAIN可以看到
+
+![修改子查询](images/child_search_2.png)
+
+通过对比可以发现，下面的改进方式比上面的查询的数量少了很多.
+
+
+* 其他的方式，可以使用EXISTS开代替IN()子查询的方式.
+
+
+
+
+
+
+
+
+
+#### 用好子查询
+
+并不是所有的子查询都是很差的，我们需要经过测试，然后做出自己的判断。
+
+
+例子：
+
+~~~
+
+EXPLAIN SELECT film_id,language_id 
+FROM sakila.`film`  
+WHERE NOT EXISTS(
+SELECT *FROM sakila.`film_actor`
+WHERE film_actor.`film_id`=film.`film_id`
+)
+
+~~~
+
+
+![相关子查询](images/child_search_3.png)
+
+
+一般会建议使用左外连接(LEFT OUTER JOIN)重写该查询，以替代子查询。理论上改写的查询是没上面变化的
+
+~~~
+EXPLAIN SELECT film.`film_id`,film.`language_id`
+FROM sakila.`film`
+LEFT OUTER JOIN sakila.`film_actor` USING(film_id)
+WHERE film_actor.`actor_id` IS NULL;
+
+~~~
+![左外连接查询代替子查询](images/child_search_4.png)
+
+
+执行上面的脚本可以按看到还是由微笑的差别：
+* film_actor的访问类型一个是DEPENDENT SUBQUERY,而零位一个是SIMPLE。这个不同是由于语句的写法
+不同导致的，一个是普通的查询是，一个相关子查询，这个对于底层的接口来说没有上面不同
+
+*第二个表film_actor的执行计划的Extra列有"Not exists"。这是一个提前终止的算法，MySQL通过
+"Not exists"优化避免在表film_actor的所有中读取无任何额外的的行。这个瓦努请安等效于直接编写NOT
+EXISTS子拆线呢，这个在执行记挂中也是已有的，一旦匹配到一行数据，就立刻停止扫描。
+
+
+
+
+
+
+
+
+
+
+
 
 
 

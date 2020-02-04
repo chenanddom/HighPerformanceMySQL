@@ -42,21 +42,20 @@ public class Demo {
 //
 
 
-        for (int i=1;i<=30;i++) {
-            String st1 = " USE `skyway_public_"+i+"`;";
-            String st2 = "insert into `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) values('3906007429814452252','2019-12-27 16:21:00','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:21:00','7fd372fc1122454aa84602d690eba0ea','0','Featured APP','com.nes.featuredapps','com.nes.featuredapps','2','23');\n" +
-                    "insert into `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) values('3906007429814452254','2019-12-27 16:21:59','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:21:59','7fd372fc1122454aa84602d690eba0ea','0','NETFLIX','com.netflix.ninja','com.netflix.ninja','2','21');\n" +
-                    "insert into `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) values('3906007429814452255','2019-12-27 16:22:12','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:22:12','7fd372fc1122454aa84602d690eba0ea','0','Youtube','com.google.android.youtube.tv','com.google.android.youtube.tv','2','22');\n" +
-                    "insert into `recommend_entry` (`id`, `create_time`, `created_by`, `update_time`, `updated_by`, `deleted_flag`, `entry_name`, `app_name`, `package_name`, `tabs`, `entry_type`) values('3906007429814452270','2019-12-27 16:44:25','7fd372fc1122454aa84602d690eba0ea','2019-12-27 16:44:25','7fd372fc1122454aa84602d690eba0ea','0','All Apps','','','1','13');\n";
-            System.out.println(st1);
-            System.out.println(st2);
-            System.out.println();
-        }
-
-  /*      SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        System.out.println(format.format(new Date(1577342953429L)));
-*/
+//        for (int i=1;i<=30;i++) {
+//            String st1 = " USE `skyway_public_"+i+"`;";
+//            String st2 = "ALTER TABLE `diagnostic_task` CHANGE `mac` `mac` VARCHAR(32) CHARSET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '设备mac';";
+//            System.out.println(st1);
+//            System.out.println(st2);
+//            System.out.println();
+//        }
+//
+//        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        System.out.println(format.format(new Date(1577936852720L)));
+//        System.out.println(format.format(new Date(1577936828670L)));
 //        System.out.println(System.currentTimeMillis());
+
+        System.out.println(System.currentTimeMillis());
 
 
     }
