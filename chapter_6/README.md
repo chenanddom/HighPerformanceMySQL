@@ -566,6 +566,404 @@ WHERE film_actor.`actor_id` IS NULL;
 EXISTS子拆线呢，这个在执行记挂中也是已有的，一旦匹配到一行数据，就立刻停止扫描。
 
 
+NOT EXISTS和左外连接性能比较
+
+
+| 查询 | 每秒查询结果(QPS) |
+| :-------- | --------:|
+| NOT EXISTS子查询 | 360QPS | 
+| LEFT OUTER JOIN | 425QPS | 
+
+
+当然并不是子查询一定比关联查询要差，需要去亲自去验证之后才可以得出真正得结果
+
+
+
+
+
+#### UNION得限制
+
+MySQL无法将限制条件从外层"下推"到内层，这个使得原本能够部分返回结果得条件无法应用到内层查询到额优化条件上。
+如果希望UNION的哥哥子句能够根据LIMIT只取部分结果集，或者能够先排好顺序再合并结果集的话，就徐奥UNION的各个子句
+分别使用这些子句。将这两个子查询联合起来，然后再取前面的20条记录。
+
+
+例子：
+
+(SELECT first_name,last_name
+FROM sakila.actor
+ORDER BY last_name)
+UNION ALL
+(SELECT first_name,last_name
+FROM sakila.customer
+ORDER BY last_name)
+LIMIT 20
+
+
+
+这个查询会把actor的200条记录和cutomer表的599条记录存放在一个临时表中，然后再从临时表中读取出前面的20条记录，
+这种方式会增加内存的压力，但是如果分别在子句添加limit限制可以只在临时表存储需要的行就可以了。
+(SELECT first_name,last_name
+FROM sakila.actor
+ORDER BY last_name
+LIMIT 20)
+UNION ALL
+(SELECT first_name,last_name
+FROM sakila.customer
+ORDER BY last_name LIMIT 20)
+LIMIT 20;
+
+#### 索引合并优化
+
+
+#### 等值传递
+ 
+ 等值传递会带来一些一项不到的额外消耗。例如IN()是一个非常大的表，而MySQL优化器发现存在WHERE,ON或者USING的子句，将这个列表i的只
+ 和另一个表的某个列相关联。
+ MySQL优化器会将IN()列表都复制到应用到关联的各个表中。
+ 
+ 
+ 
+#### 合并执行
+
+MySQL无法利用多核特性来并行的执行查询
+
+
+#### 哈希关联
+ MySQL不支持哈希关联，支持嵌套循环关联
+ 
+ 
+ 
+#### 松散索引扫描
+ 
+ MySQL不支持松散关联(不连续的方式扫描一个索引)
+ 
+ 
+#### 最大值和最小值的优化
+
+对于MIN()和MAX()查询，Mysql的优化都做得并不好.
+
+例子:
+
+`
+SELECT 
+  MIN(actor_id) 
+FROM
+  sakila.`actor` 
+WHERE first_name = 'PENELOPE' ;
+
+`
+因为first_name字段上没有索引，因此MySQL将会进行一次全表扫描。如果能够进行主键扫描，那么理论上，当MySQL读取到第一个满足条件得
+记录得时候，就是我们需要找到最小值了，因为主键是严格按照actor_id字段得大小顺序排序得。但是MySQL这个时候会做全表扫描，我们可以通过
+查看SHOW STATUS得全表扫描计数器老验证这一点，理想得办法就是使用limit来移除MIN().
+
+
+`
+SELECT actor_id 
+FROM sakila.`actor` USE INDEX(PRIMARY)
+WHERE first_name = 'PENELOPE'  LIMIT 1;
+
+`
+
+#### 在同一个表上查询和更新
+
+MySQL不允许对同一张表同时进行查询和更新操作.
+
+```$xslt
+UPDATE `actor` SET first_name=(SELECT first_name FROM `actor` WHERE actor_id=1);
+
+```
+
+
+可以通过生成临表来解决上面得问题
+
+如下:
+
+
+
+```
+UPDATE `actor` tb1,(SELECT * FROM `actor` WHERE actor_id=1) AS tb2
+SET tb1.`first_name`=tb2.`first_name`;
+```
+
+
+
+
+
+
+
+#### 查询优化器得提示(hint)
+
+
+
+## 优化特定类型的查询
+
+
+
+
+### 优化COUNT()查询
+COUNT()聚合函数,这个函数的作用是统计结果集的行数。这个函数有两种不同作用：可以统计某个列
+值，也可以统计行数。在同i列值是非空(不统计NULL)。如果在COUNT()的括号内指定了列或者列
+的表达式，则统计就是这个表达式有值的结果数。
+COUNT()的另一个作用是统计结果集的行数。当MySQL确认括号内的标识值不可能为空时，实际上就是同hi行数。最简单就是使用COUNT(*)的时候，这种情况下
+通配符`*`并不会像我们猜想的那样扩展成索引的列，实际上，它会忽略所有列的而直接统计所有的行数
+
+#### MyISAM的神话
+
+MyISAM的COUNT(*)函数总是非常快，这是建立在没有任何WHERE条件按的COUNT(*)才是最快的。因此此时无需实际地去计算行数。
+MySQL可以利用粗出一起的特性直接获得是这个值。
+
+简单的优化：
+ 
+有时候可以使用MyISAM在COUNT(*)全表非常快的这个特性，来加速一些条件的COUNT的查询
+
+例子:
+
+```$xslt
+
+
+EXPLAIN SELECT COUNT(*) FROM 
+sakila.`actor`  WHERE actor_id>5;
+
+
+```
+这个时候需要全表扫描，如果用id<=5的，在使用总是减去也可以得到切确的数据
+
+```$xslt
+EXPLAIN SELECT (SELECT COUNT(*) FROM sakila.`actor`)-COUNT(*)
+FROM sakila.`actor` WHERE  actor_id<=5;
+
+```
+这个时候只需要扫面前面几行..
+
+
+近似值估计：
+
+如果需要的数据不是需要的精确的计算，那么可以使用EXPLAIN的估算的方式来获取这个数据
+而且这种方式的执行速度试比较快的。
+
+
+
+更复杂的优化：
+
+一般快速，精确和简单这个三者蝾螈只能满足其中两个，必须要舍弃其中一个。其实COUNT()函数一般都是要扫描大量的行，
+要做优化还是比较困难的，可以考虑缓存的方式.
+
+
+
+### 优化关联查询
+
+* 确保ON或者USING子句的列上有索引,在创建索引的时候就压迫考虑关联的顺序。一般需要在关联的第二个表
+对应的列上创建索引。
+
+* 确保任何GROUP BY 和ORDER BY中的表达式值涉及到一个表中的列，这样的MySQL才能使用索引来洋浦话这个过程.
+
+* 当涉及MySQL的时候需要注意：关联语法，预算符优先级等吉他可能会发生变化的地方。因为以前普通关联的地方可能会变成笛卡尔积，不同的、
+关联类型可能会生成不同的结果。
+
+
+### 优化子查询
+
+
+尽可能使用关联代替子查询.
+
+### 优化GROUP BY和DISTINCT 
+
+
+在MySQL中，当无法使用索引的时候，GROUP BY 使用两种测率被来完成，，使用临时表或者文件排序来做分组。
+对于任何查询语句，这两种策略的性能都可以提升的地方。可以使用SQL_BIG_RESULT和SQL_SMALL_RESULT来让优化器
+按照你希望的方式运行。
+
+如果需要对关联查询做分组，并且按照查表中的某个列进行分组，那么通常采用的查找的标识列分组的效率更高。
+下面的查询语句的查询效率不是很高
+```$xslt
+
+SELECT actor.`first_name`,actor.`last_name`,COUNT(*)
+FROM sakila.`film_actor`
+INNER JOIN sakila.`actor` USING(actor_id)
+GROUP BY actor.`first_name`,actor.`last_name`;
+
+
+```
+
+下面这种查询的方式效率更高:
+
+
+```$xslt
+
+SELECT actor.`first_name`,actor.`last_name`,COUNT(*)
+FROM sakila.`film_actor`
+INNER JOIN sakila.`actor` USING(actor_id)
+GROUP BY film_actor.`actor_id`;
+
+```
+
+对于group by 如果不关心排序的顺序，那么很可能试文件拍寻，此时可以使用ORDER BY NULL，让MySQL不使用文件排序.
+
+
+
+
+* 优化GROUP BY WITH ROLLUP (主要试在group by统计的基础上再做一个统计)
+
+分组查询的一个变种就是要求MySQL对返回的结果在做一次超级给，可以使用WITH ROLLUP子句
+来实现这种逻辑，但是可能不够优化，可以试有EXPLAIN来查看执行计划，特别要注意分组是否真通过文件拍寻或者临时表实现的。
+然后去掉WITH ROLLUP子句查看是否相同。
+
+
+### 优化LIMIT分页
+
+我们可以使用Limit进行分页，但是通常使用limit分页偏移量很大的时候就会需要查找大量的数据，但是最后只是返回少数的数据是我们需要的，
+大多数都是丢弃的。
+
+
+
+例子
+```$xslt
+
+EXPLAIN SELECT film_id,description
+FROM sakila.`film` 
+ORDER BY title LIMIT 50, 5;
+
+```
+
+![limit分页的问题](images/limit_search.png)
+从上面的图可以知道，需要获取很多的数据，但是最后却只需要前面的几行数据，最后把大部分的数据丢弃，这个对于我们威严试浪费的。
+
+
+解决的方法：
+
+
+```$xslt
+
+EXPLAIN SELECT film.`film_id`,film.`description`
+FROM sakila.`film`
+INNER JOIN (
+SELECT film_id
+FROM sakila.`film`
+ORDER BY title LIMIT 50,5
+) AS lim USING(film_id);
+
+```
+
+
+
+### 优化SQL_CALC_FOUND_ROWS
+
+分页的时候，另一个常见的技巧是在LIMIT语句中加上SQL_CALC_FOUNDS提示(hint),这样就可以去掉LIMIT以后满足的添加的行数，
+可作为分页的总数。实际上，MySQL是扫描了索引的行之后才会知道索引的行数，所以这个操作成本还是很高的。
+
+
+### 优化UNION查询
+
+MySQL总是创建临时表来填充表的方式来执行UNION查询。我们可以通过将WHERE,LIMIT,ORDER BY 吓退到UNION的各个查询中，
+以便优化器充分利用这些条件进行优化。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
